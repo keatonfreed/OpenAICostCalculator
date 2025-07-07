@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-app-bg: #060a0d;
+  --color-surface-primary: #0b1014;
+
+  /* --color-border: #101a1f; */
+  --color-border: #17262e;
+
+  /* --- Text --- */
+  --color-text-primary: #f2f6fa;
+  --color-text-secondary: #a4a4a4;
+  --color-text-tertiary: #707070;
+  --color-text-placeholder: #ffffffcc;
+  /* 80 % white */
+
+  /* --- Brand accent (teal) --- */
+  /* --color-accent-primary: #00d2ff; */
+  --color-accent-primary: #3ed5d4;
+  --color-accent-hover: #00beeb;
+  --color-accent-muted: #00d2ff33;
+  /* subtle fills / focus rings */
+
+  /* --- UI helpers --- */
+  --color-table-row-hover: #ffffff0d;
+  /* row highlight */
+  --color-input-bg: #282828;
+  --color-input-border: #ffffff12;
+  --color-input-focus-ring: #00d2ff80;
+}
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  /* display: flex; */
+  min-height: 100vh;
+  min-width: 100vw;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  -webkit-appearance: none;
+  appearance: none;
+
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -moz-appearance: textfield;
+  -webkit-appearance: none;
+  appearance: none;
+}
