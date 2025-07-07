@@ -55,7 +55,21 @@ function App() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Prevent invalid characters like '-', 'e', or exceeding max value
+    // For API calls, handle comma formatting
+    if (name === 'apiCalls') {
+      // Remove all non-digit characters
+      const numericValue = value.replace(/[^\d]/g, '');
+
+      // Prevent exceeding max value
+      if (numericValue && parseFloat(numericValue) > 1000000) {
+        return;
+      }
+
+      setInputs((prev) => ({ ...prev, [name]: numericValue === '' ? '' : parseFloat(numericValue) || '' }));
+      return;
+    }
+
+    // For other inputs, prevent invalid characters like '-', 'e', or exceeding max value
     if (/^-|e/.test(value) || parseFloat(value) > 1000000) {
       return;
     }
@@ -129,22 +143,29 @@ function App() {
       const data = await response.json();
       const aiOutput = data.choices[0].message.content;
       setOutputTokenText(aiOutput);
-      
+
       // Open the output token modal
       setShowOutputTokenModal(true);
-      
+
       // Wait a moment for the modal to open and token count to update, then auto-update
       setTimeout(() => {
         const tokenCount = countOpenAITokens(aiOutput);
         setInputs(prev => ({ ...prev, outputTokens: tokenCount }));
       }, 300);
-      
+
     } catch (error) {
       console.error('AI generation error:', error);
       alert('Error generating AI response. Please check your API key and try again.');
     } finally {
       setAiGenerating(false);
     }
+  };
+
+  const formatInputValue = (name, value) => {
+    if (name === 'apiCalls' && value && value !== '') {
+      return value.toLocaleString();
+    }
+    return value;
   };
 
   const formatNumber = (num) => {
@@ -438,10 +459,23 @@ function App() {
                   </svg>
                 ) : (
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
-                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                   </svg>
                 )}
               </button>
+            </label>
+          </div>
+          <div className="mb-4">
+            <label className="block text-text-secondary">API Calls:
+              <input
+                type="text"
+                name="apiCalls"
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                value={formatInputValue('apiCalls', inputs.apiCalls)}
+                className="mt-2 w-full p-2 rounded-md border border-border text-text-primary"
+                placeholder="1"
+              />
             </label>
           </div>
           <div className="mb-4 relative">
@@ -461,7 +495,7 @@ function App() {
                 style={{ zIndex: 10, height: '28px', width: '32px' }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </button>
             </label>
