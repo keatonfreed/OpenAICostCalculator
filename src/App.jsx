@@ -170,10 +170,9 @@ function App() {
     if (inputDebounceRef.current) clearTimeout(inputDebounceRef.current);
     inputDebounceRef.current = setTimeout(() => {
       if (inputTokenText) {
-        countOpenAITokens(inputTokenText).then(count => {
-          setInputTokenCount(count);
-          setInputTokenLoading(false);
-        });
+        let count = countOpenAITokens(inputTokenText);
+        setInputTokenCount(count);
+        setInputTokenLoading(false);
       } else {
         setInputTokenCount(0);
         setInputTokenLoading(false);
@@ -189,10 +188,9 @@ function App() {
     if (outputDebounceRef.current) clearTimeout(outputDebounceRef.current);
     outputDebounceRef.current = setTimeout(() => {
       if (outputTokenText) {
-        countOpenAITokens(outputTokenText).then(count => {
-          setOutputTokenCount(count);
-          setOutputTokenLoading(false);
-        });
+        let count = countOpenAITokens(outputTokenText);
+        setOutputTokenCount(count);
+        setOutputTokenLoading(false);
       } else {
         setOutputTokenCount(0);
         setOutputTokenLoading(false);
