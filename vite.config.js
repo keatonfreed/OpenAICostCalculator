@@ -11,4 +11,7 @@ export default defineConfig({
     tailwind(),
     wasm(),
   ],
+  build: {
+    target: 'esnext',
+  }
 })
