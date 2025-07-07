@@ -28,12 +28,21 @@ function App() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending', clicks: 0 });
   const [showInputTokenModal, setShowInputTokenModal] = useState(false);
   const [showOutputTokenModal, setShowOutputTokenModal] = useState(false);
-  const [inputTokenText, setInputTokenText] = useState('');
-  const [outputTokenText, setOutputTokenText] = useState('');
+  const [inputTokenText, setInputTokenText] = useState(() => {
+    return localStorage.getItem('inputTokenText') || '';
+  });
+  const [outputTokenText, setOutputTokenText] = useState(() => {
+    return localStorage.getItem('outputTokenText') || '';
+  });
   const [inputTokenCount, setInputTokenCount] = useState(0);
   const [outputTokenCount, setOutputTokenCount] = useState(0);
   const [inputTokenLoading, setInputTokenLoading] = useState(false);
   const [outputTokenLoading, setOutputTokenLoading] = useState(false);
+  const [apiKey, setApiKey] = useState(() => {
+    const saved = localStorage.getItem('openaiApiKey');
+    return saved ? atob(saved) : '';
+  });
+  const [aiGenerating, setAiGenerating] = useState(false);
   const [inputModalPos, setInputModalPos] = useState({ top: 0, left: 0 });
   const [outputModalPos, setOutputModalPos] = useState({ top: 0, left: 0 });
   const inputBtnRef = useRef(null);
@@ -66,8 +75,76 @@ function App() {
     localStorage.setItem('inputs', JSON.stringify(inputs));
   }, [inputs]);
 
-  const handleModeChange = (e) => {
-    setMode(e.target.value);
+  // Save token text to localStorage
+  useEffect(() => {
+    localStorage.setItem('inputTokenText', inputTokenText);
+  }, [inputTokenText]);
+
+  useEffect(() => {
+    localStorage.setItem('outputTokenText', outputTokenText);
+  }, [outputTokenText]);
+
+  // Save API key to localStorage (base64 encoded)
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem('openaiApiKey', btoa(apiKey));
+    }
+  }, [apiKey]);
+
+  const handleAiGenerate = async () => {
+    if (!apiKey.trim()) {
+      alert('Please enter your OpenAI API key first');
+      return;
+    }
+
+    if (!inputTokenText.trim()) {
+      alert('Please enter some input text first');
+      return;
+    }
+
+    setAiGenerating(true);
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4.1-nano',
+          messages: [
+            {
+              role: 'user',
+              content: inputTokenText
+            }
+          ],
+          max_tokens: 2000,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiOutput = data.choices[0].message.content;
+      setOutputTokenText(aiOutput);
+      
+      // Open the output token modal
+      setShowOutputTokenModal(true);
+      
+      // Wait a moment for the modal to open and token count to update, then auto-update
+      setTimeout(() => {
+        const tokenCount = countOpenAITokens(aiOutput);
+        setInputs(prev => ({ ...prev, outputTokens: tokenCount }));
+      }, 300);
+      
+    } catch (error) {
+      console.error('AI generation error:', error);
+      alert('Error generating AI response. Please check your API key and try again.');
+    } finally {
+      setAiGenerating(false);
+    }
   };
 
   const formatNumber = (num) => {
@@ -296,7 +373,7 @@ function App() {
                 className="absolute right-2 bottom-2 bg-accent-primary text-white px-2 py-1 rounded text-base shadow cursor-pointer flex items-center justify-center"
                 onClick={() => setShowInputTokenModal(true)}
                 title="Open token calculator for input"
-                style={{ zIndex: 10 }}
+                style={{ zIndex: 10, height: '28px', width: '32px' }}
               >
                 {/* Calculator icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -323,15 +400,15 @@ function App() {
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 value={inputs.outputTokens}
-                className="mt-2 w-full p-2 rounded-md border border-border text-text-primary pr-10"
+                className="mt-2 w-full p-2 rounded-md border border-border text-text-primary pr-20"
               />
               <button
                 type="button"
                 ref={outputBtnRef}
-                className="absolute right-2 bottom-2 bg-accent-primary text-white px-2 py-1 rounded text-base shadow cursor-pointer flex items-center justify-center"
+                className="absolute right-12 bottom-2 bg-accent-primary text-white px-2 py-1 rounded text-base shadow cursor-pointer flex items-center justify-center"
                 onClick={() => setShowOutputTokenModal(true)}
                 title="Open token calculator for output"
-                style={{ zIndex: 10 }}
+                style={{ zIndex: 10, height: '28px', width: '32px' }}
               >
                 {/* Calculator icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -344,6 +421,47 @@ function App() {
                   <rect x="7" y="16" width="3" height="3" rx="1" fill="currentColor" />
                   <rect x="11" y="16" width="3" height="3" rx="1" fill="currentColor" />
                   <rect x="15" y="16" width="3" height="3" rx="1" fill="currentColor" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="absolute right-2 bottom-2 bg-green-600 text-white px-2 py-1 rounded text-base shadow cursor-pointer flex items-center justify-center disabled:opacity-50"
+                onClick={handleAiGenerate}
+                disabled={aiGenerating}
+                title="Generate AI response"
+                style={{ zIndex: 10, height: '28px', width: '32px' }}
+              >
+                {aiGenerating ? (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                  </svg>
+                )}
+              </button>
+            </label>
+          </div>
+          <div className="mb-4 relative">
+            <label className="block text-text-secondary">OpenAI API Key:
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your OpenAI API key"
+                className="mt-2 w-full p-2 rounded-md border border-border text-text-primary pr-10"
+              />
+              <button
+                type="button"
+                className="absolute right-2 bottom-2 bg-blue-600 text-white px-2 py-1 rounded text-base shadow cursor-pointer flex items-center justify-center"
+                onClick={() => window.open('https://platform.openai.com/api-keys', '_blank')}
+                title="Get OpenAI API Key"
+                style={{ zIndex: 10, height: '28px', width: '32px' }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
+                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                 </svg>
               </button>
             </label>
@@ -364,7 +482,7 @@ function App() {
                 </button>
                 <h2 className="text-lg font-bold mb-2">Text Token Calculator</h2>
                 <textarea
-                  className="w-full border border-border rounded p-2 mb-2 min-h-[80px] bg-surface-secondary text-text-primary focus:ring-accent-primary focus:border-accent-primary transition-all"
+                  className="w-full border border-border rounded p-2 mb-2 min-h-[80px] bg-surface-secondary text-text-primary focus:ring-accent-primary focus:border-accent-primary transition-all resize-x"
                   placeholder="Paste or type your input text here..."
                   value={inputTokenText}
                   onChange={e => setInputTokenText(e.target.value)}
@@ -404,7 +522,7 @@ function App() {
                 </button>
                 <h2 className="text-lg font-bold mb-2">Text Token Calculator</h2>
                 <textarea
-                  className="w-full border border-border rounded p-2 mb-2 min-h-[80px] bg-surface-secondary text-text-primary focus:ring-accent-primary focus:border-accent-primary transition-all"
+                  className="w-full border border-border rounded p-2 mb-2 min-h-[80px] bg-surface-secondary text-text-primary focus:ring-accent-primary focus:border-accent-primary transition-all resize-x"
                   placeholder="Paste or type your output text here..."
                   value={outputTokenText}
                   onChange={e => setOutputTokenText(e.target.value)}
